@@ -1,9 +1,15 @@
 import express from "express";
 import Recipe from "../../models/Recipe.js";
+import User from "../../models/User.js";
+import Notification from "../../models/Notification.js";
 import { verifyToken, optionalAuth } from "../../middleware/auth.js";
 import { asyncHandler } from "../../middleware/errorHandler.js";
+import favoritesRouter from "./favorites.js";
 
 const router = express.Router();
+
+// Mount favorites routes
+router.use("/", favoritesRouter);
 
 // Get all recipes with filters and pagination
 router.get("/", optionalAuth, asyncHandler(async (req, res) => {
