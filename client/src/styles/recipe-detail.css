@@ -1,0 +1,190 @@
+.recipe-detail {
+  min-height: 100vh;
+  background-color: #f9faf7;
+}
+
+.recipe-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: #2e7d32;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.back-button:hover {
+  color: #1b5e20;
+}
+
+.recipe-header {
+  background: white;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.recipe-image {
+  width: 100%;
+  max-height: 400px;
+  object-fit: cover;
+}
+
+.recipe-info {
+  padding: 2rem;
+}
+
+.recipe-info h1 {
+  color: #263238;
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+}
+
+.description {
+  color: #b0bec5;
+  font-size: 1rem;
+  margin: 0 0 1.5rem;
+  line-height: 1.6;
+}
+
+.recipe-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  color: #263238;
+  font-size: 0.95rem;
+}
+
+.meta-item strong {
+  color: #2e7d32;
+}
+
+.recipe-tags {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.tag {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+}
+
+.tag.vegan {
+  background-color: #66bb6a;
+}
+
+.tag.vegetarian {
+  background-color: #2e7d32;
+}
+
+.recipe-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.ingredients-section,
+.instructions-section {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+}
+
+.ingredients-section h2,
+.instructions-section h2 {
+  color: #2e7d32;
+  margin: 0 0 1rem;
+  font-size: 1.3rem;
+}
+
+.ingredients-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ingredients-list li {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-left: 3px solid #66bb6a;
+  padding-left: 1rem;
+}
+
+.quantity {
+  font-weight: 600;
+  color: #f57c00;
+  min-width: 80px;
+}
+
+.ingredient-name {
+  color: #263238;
+}
+
+.instructions-list {
+  list-style-position: inside;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.instructions-list li {
+  color: #263238;
+  line-height: 1.6;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.1rem;
+  color: #263238;
+}
+
+.error {
+  color: #c62828;
+}
+
+@media (max-width: 768px) {
+  .recipe-container {
+    padding: 1rem;
+  }
+
+  .recipe-info {
+    padding: 1rem;
+  }
+
+  .recipe-info h1 {
+    font-size: 1.5rem;
+  }
+
+  .recipe-content {
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-meta {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
