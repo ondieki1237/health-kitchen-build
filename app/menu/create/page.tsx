@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Plus, X } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api"
 
 export default function MenuBuilderPage() {
   const router = useRouter()
@@ -44,7 +45,7 @@ export default function MenuBuilderPage() {
 
     setSearching(true)
     try {
-      const response = await fetch(`/api/recipes?search=${encodeURIComponent(searchQuery)}`)
+      const response = await fetch(`${API_BASE_URL}/recipes?search=${encodeURIComponent(searchQuery)}`)
       const data = await response.json()
       setSearchResults(data)
     } catch (error) {
@@ -121,7 +122,7 @@ export default function MenuBuilderPage() {
         return
       }
 
-      const response = await fetch("/api/menus", {
+      const response = await fetch(`${API_BASE_URL}/menus`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

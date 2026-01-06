@@ -7,6 +7,7 @@ import RecipeCard from "@/components/kitchen/RecipeCard"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { API_BASE_URL } from "@/lib/api"
 
 interface Recipe {
   _id: string
@@ -54,10 +55,12 @@ export default function DashboardPage() {
 
   const fetchRecipes = async () => {
     try {
-      const response = await fetch("/api/recipes")
+      const response = await fetch(`${API_BASE_URL}/recipes`)
       const data = await response.json()
-      setRecipes(data)
-      setFilteredRecipes(data)
+      // API returns { recipes: [], pagination: {} }
+      const recipesList = data.recipes || data
+      setRecipes(recipesList)
+      setFilteredRecipes(recipesList)
     } catch (error) {
       console.error("Error fetching recipes:", error)
     } finally {

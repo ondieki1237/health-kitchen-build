@@ -35,10 +35,8 @@ export const optionalAuth = (req, res, next) => {
       req.userId = decoded.userId;
       req.user = decoded;
     }
-    
-    next();
   } catch (error) {
     // Continue without authentication
-    next();
   }
+  next();
 };

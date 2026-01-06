@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Clock, Users, Star, Calendar, ChefHat } from "lucide-react"
 import { Loader2 } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api"
 
 export default function MenuDetailPage() {
   const params = useParams()
@@ -22,7 +23,7 @@ export default function MenuDetailPage() {
 
   const fetchMenu = async () => {
     try {
-      const response = await fetch(`/api/menus/${params.id}`)
+      const response = await fetch(`${API_BASE_URL}/menus/${params.id}`)
       const data = await response.json()
       setMenu(data)
     } catch (error) {

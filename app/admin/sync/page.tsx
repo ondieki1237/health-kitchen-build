@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2 } from "lucide-react"
+import { API_BASE_URL } from "@/lib/api"
 
 export default function AdminSyncPage() {
   const [action, setAction] = useState("sync-area")
@@ -35,7 +36,7 @@ export default function AdminSyncPage() {
         return
       }
 
-      const response = await fetch("/api/sync/themealdb", {
+      const response = await fetch(`${API_BASE_URL}/sync/themealdb`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

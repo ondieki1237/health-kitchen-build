@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Loader2, Search, Filter, SlidersHorizontal } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { API_BASE_URL } from "@/lib/api"
 
 export default function SearchPage() {
   const [recipes, setRecipes] = useState([])
@@ -43,7 +44,7 @@ export default function SearchPage() {
 
   const fetchFilterOptions = async () => {
     try {
-      const response = await fetch("/api/search/filters")
+      const response = await fetch(`${API_BASE_URL}/search/filters`)
       const data = await response.json()
       setFilterOptions(data)
     } catch (error) {
@@ -65,7 +66,7 @@ export default function SearchPage() {
       params.append("page", page.toString())
       params.append("limit", pagination.limit.toString())
 
-      const response = await fetch(`/api/search?${params.toString()}`)
+      const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`)
       const data = await response.json()
 
       setRecipes(data.recipes)

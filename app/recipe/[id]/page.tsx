@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Header from "@/components/kitchen/Header"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { API_BASE_URL } from "@/lib/api"
 
 interface Recipe {
   _id: string
@@ -42,7 +43,7 @@ export default function RecipeDetailPage() {
 
   const fetchRecipe = async () => {
     try {
-      const response = await fetch(`/api/recipes/${id}`)
+      const response = await fetch(`${API_BASE_URL}/recipes/${id}`)
       if (!response.ok) throw new Error("Recipe not found")
       const data = await response.json()
       setRecipe(data)
@@ -147,10 +148,10 @@ export default function RecipeDetailPage() {
             <div className="bg-white rounded-lg p-6">
               <h2 className="text-2xl font-bold text-[#2e7d32] mb-4">Instructions</h2>
               <ol className="space-y-3">
-                {recipe.instructions.map((instruction, idx) => (
+                {recipe.instructions.map((inst, idx) => (
                   <li key={idx} className="flex gap-4">
-                    <span className="font-bold text-[#f57c00] flex-shrink-0">{idx + 1}.</span>
-                    <span className="text-gray-700">{instruction}</span>
+                    <span className="font-bold text-[#f57c00] flex-shrink-0">{inst.stepNumber || idx + 1}.</span>
+                    <span className="text-gray-700">{typeof inst === 'string' ? inst : inst.instruction}</span>
                   </li>
                 ))}
               </ol>

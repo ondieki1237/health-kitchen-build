@@ -74,4 +74,5 @@ const recipeSchema = new mongoose.Schema(
 // Text search index
 recipeSchema.index({ name: "text", description: "text", tags: "text" })
 
-export default mongoose.model("Recipe", recipeSchema)
+export default mongoose.models.Recipe || mongoose.model("Recipe", recipeSchema)
+
