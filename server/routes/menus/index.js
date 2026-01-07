@@ -11,7 +11,7 @@ router.get("/", optionalAuth, asyncHandler(async (req, res) => {
   const filter = userId ? { createdBy: userId } : {};
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
-  
+
   const [menus, total] = await Promise.all([
     Menu.find(filter)
       .sort("-createdAt")
@@ -32,6 +32,54 @@ router.get("/", optionalAuth, asyncHandler(async (req, res) => {
       pages: Math.ceil(total / parseInt(limit))
     }
   });
+}));
+
+// Get current weekly menu for user
+router.get("/weekly", verifyToken, asyncHandler(async (req, res) => {
+  let menu = await Menu.findOne({
+    createdBy: req.userId,
+    type: "weekly"
+  })
+    .sort("-updatedAt") // Get the most recently active/updated one
+    .populate("meals.recipe", "name caloriesPerServing nutrition");
+
+  if (!menu) {
+    // Return empty structure if no plan exists yet
+    return res.json({ meals: [] });
+  }
+
+  res.json(menu);
+}));
+
+// Save/Update weekly menu
+router.post("/weekly", verifyToken, asyncHandler(async (req, res) => {
+  const { meals } = req.body; // Expecting array of { day, mealTime, recipe, servings }
+
+  // Check if user already has a weekly menu
+  let menu = await Menu.findOne({
+    createdBy: req.userId,
+    type: "weekly"
+  }).sort("-updatedAt");
+
+  if (menu) {
+    // Update existing
+    menu.meals = meals;
+    menu.updatedAt = new Date();
+    await menu.save();
+  } else {
+    // Create new
+    menu = new Menu({
+      name: "My Weekly Plan",
+      slug: `weekly-plan-${req.userId}-${Date.now()}`,
+      createdBy: req.userId,
+      type: "weekly",
+      meals: meals,
+      isPublic: false
+    });
+    await menu.save();
+  }
+
+  res.json(menu);
 }));
 
 // Get single menu
