@@ -40,6 +40,15 @@ export default function Header({ user, onLogout }: HeaderProps) {
             <>
               <Button
                 variant="ghost"
+                onClick={() => router.push("/planner")}
+                className="flex items-center gap-2 text-gray-700 hover:text-[#2e7d32]"
+              >
+                <Calendar className="h-4 w-4" />
+                Planner
+              </Button>
+
+              <Button
+                variant="ghost"
                 onClick={() => router.push("/profile/tried")}
                 className="flex items-center gap-2 text-gray-700 hover:text-[#2e7d32]"
               >
@@ -88,6 +97,15 @@ export default function Header({ user, onLogout }: HeaderProps) {
                   >
                     <UtensilsCrossed className="h-5 w-5" />
                     Browse Recipes
+                  </Button>
+
+                  <Button
+                    onClick={() => handleNavigation("/planner")}
+                    variant="ghost"
+                    className="justify-start gap-3 text-lg"
+                  >
+                    <Calendar className="h-5 w-5" />
+                    Planner
                   </Button>
 
                   <Button
