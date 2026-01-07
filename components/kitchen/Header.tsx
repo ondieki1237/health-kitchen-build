@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { Plus, ChefHat } from "lucide-react"
 
 interface HeaderProps {
   user?: any
@@ -20,7 +21,19 @@ export default function Header({ user, onLogout }: HeaderProps) {
         </Link>
 
         <div className="flex items-center gap-4">
-          {user && <span className="text-sm text-gray-700 hidden md:inline">Welcome, {user.username}</span>}
+          {user && (
+            <>
+              <Button
+                onClick={() => router.push("/menu/create")}
+                variant="outline"
+                className="hidden md:flex items-center gap-2"
+              >
+                <ChefHat className="h-4 w-4" />
+                Create Menu
+              </Button>
+              <span className="text-sm text-gray-700 hidden md:inline">Welcome, {user.username}</span>
+            </>
+          )}
           {onLogout && (
             <Button onClick={onLogout} className="bg-[#f57c00] hover:bg-[#e65100] text-white">
               Logout

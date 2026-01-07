@@ -47,7 +47,7 @@ export default function MenuBuilderPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/recipes?search=${encodeURIComponent(searchQuery)}`)
       const data = await response.json()
-      setSearchResults(data)
+      setSearchResults(data.recipes || data)
     } catch (error) {
       console.error("Search error:", error)
       toast({

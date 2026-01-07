@@ -22,15 +22,26 @@ interface Recipe {
 
 export default function DashboardPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([])
+  // We no longer need separate filteredRecipes because filtering happens on backend
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [user, setUser] = useState<any>(null)
+
+  // Pagination state
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const LIMIT = 10 // Requirement: show 10 recipes
+
   const [filters, setFilters] = useState({
     search: "",
-    category: "",
+    category: "all", // default to "all" string to match select
     isVegetarian: false,
     isVegan: false,
   })
+
+  // Debounce search
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+
   const router = useRouter()
 
   useEffect(() => {
@@ -45,53 +56,69 @@ export default function DashboardPage() {
     if (userData) {
       setUser(JSON.parse(userData))
     }
-
-    fetchRecipes()
   }, [router])
 
+  // Debounce effect
   useEffect(() => {
-    applyFilters()
-  }, [recipes, filters])
+    const timer = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
 
-  const fetchRecipes = async () => {
+  // Reset pagination when filters change (except search which is handled by debounce)
+  useEffect(() => {
+    setPage(1);
+    fetchRecipes(1, true);
+  }, [filters.category, filters.isVegetarian, filters.isVegan, debouncedSearch])
+
+  const fetchRecipes = async (pageNum: number, reset: boolean = false) => {
+    if (reset) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/recipes`)
+      const queryParams = new URLSearchParams()
+      queryParams.append("page", pageNum.toString())
+      queryParams.append("limit", LIMIT.toString())
+
+      if (debouncedSearch) queryParams.append("search", debouncedSearch)
+      if (filters.category && filters.category !== "all") queryParams.append("category", filters.category)
+      if (filters.isVegetarian) queryParams.append("isVegetarian", "true")
+      if (filters.isVegan) queryParams.append("isVegan", "true")
+
+      const response = await fetch(`${API_BASE_URL}/recipes?${queryParams.toString()}`)
       const data = await response.json()
-      // API returns { recipes: [], pagination: {} }
-      const recipesList = data.recipes || data
-      setRecipes(recipesList)
-      setFilteredRecipes(recipesList)
+
+      const newRecipes = data.recipes || []
+
+      if (reset) {
+        setRecipes(newRecipes);
+      } else {
+        setRecipes(prev => [...prev, ...newRecipes]);
+      }
+
+      // Update hasMore based on pagination data
+      if (data.pagination) {
+        setHasMore(data.pagination.page < data.pagination.pages);
+      } else {
+        setHasMore(newRecipes.length === LIMIT);
+      }
+
     } catch (error) {
       console.error("Error fetching recipes:", error)
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
 
-  const applyFilters = () => {
-    let filtered = recipes
-
-    if (filters.search) {
-      filtered = filtered.filter(
-        (r) =>
-          r.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-          (r.description && r.description.toLowerCase().includes(filters.search.toLowerCase())),
-      )
-    }
-
-    if (filters.category) {
-      filtered = filtered.filter((r) => r.category === filters.category)
-    }
-
-    if (filters.isVegetarian) {
-      filtered = filtered.filter((r) => r.isVegetarian)
-    }
-
-    if (filters.isVegan) {
-      filtered = filtered.filter((r) => r.isVegan)
-    }
-
-    setFilteredRecipes(filtered)
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchRecipes(nextPage, false);
   }
 
   const handleFilterChange = (name: string, value: any) => {
@@ -117,7 +144,7 @@ export default function DashboardPage() {
 
       <div className="flex flex-col md:flex-row gap-6 max-w-7xl mx-auto p-4 md:p-8">
         {/* Filters Sidebar */}
-        <div className="w-full md:w-64 bg-white rounded-lg p-6 md:h-fit md:sticky md:top-24">
+        <div className="w-full md:w-64 bg-white rounded-lg p-6 md:h-fit md:sticky md:top-24 shadow-sm">
           <h2 className="text-xl font-bold text-[#2e7d32] mb-6">Find Recipes</h2>
 
           <div className="space-y-6">
@@ -167,17 +194,38 @@ export default function DashboardPage() {
         {/* Recipes Grid */}
         <div className="flex-1">
           {loading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">Loading recipes...</p>
-            </div>
-          ) : filteredRecipes.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRecipes.map((recipe) => (
-                <RecipeCard key={recipe._id} recipe={recipe} onClick={() => handleRecipeClick(recipe._id)} />
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse"></div>
               ))}
             </div>
+          ) : recipes.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {recipes.map((recipe) => (
+                  <RecipeCard key={recipe._id} recipe={recipe} onClick={() => handleRecipeClick(recipe._id)} />
+                ))}
+              </div>
+
+              {hasMore && (
+                <div className="flex justify-center pb-8">
+                  <button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    className="bg-[#2e7d32] hover:bg-[#1b5e20] text-white px-8 py-3 rounded-full font-semibold shadow-md transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    {loadingMore ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        Loading...
+                      </>
+                    ) : "View More"}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
-            <div className="bg-white rounded-lg p-12 text-center">
+            <div className="bg-white rounded-lg p-12 text-center shadow-sm">
               <p className="text-gray-600 text-lg">No recipes found. Try adjusting your filters.</p>
             </div>
           )}

@@ -1,24 +1,35 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Clock, Users, Star, Calendar, ChefHat } from "lucide-react"
+import { Clock, Users, Star, Calendar, ChefHat, Upload, Image as ImageIcon, Send, Heart } from "lucide-react"
 import { Loader2 } from "lucide-react"
 import { API_BASE_URL } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
 export default function MenuDetailPage() {
   const params = useParams()
   const [menu, setMenu] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [comments, setComments] = useState<any[]>([])
+  const [commentText, setCommentText] = useState("")
+  const [commentRating, setCommentRating] = useState(0)
+  const [commentImage, setCommentImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [submittingComment, setSubmittingComment] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchMenu()
+    fetchComments()
   }, [params.id])
 
   const fetchMenu = async () => {
@@ -30,6 +41,132 @@ export default function MenuDetailPage() {
       console.error("Error fetching menu:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/comments?targetId=${params.id}&targetType=Menu`)
+      const data = await response.json()
+      setComments(data.comments || [])
+    } catch (error) {
+      console.error("Error fetching comments:", error)
+    }
+  }
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setCommentImage(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const uploadImageToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "haven_furniture")
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    )
+
+    const data = await response.json()
+    return data.secure_url
+  }
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please write a review",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setSubmittingComment(true)
+
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        toast({
+          title: "Error",
+          description: "Please login to leave a review",
+          variant: "destructive",
+        })
+        return
+      }
+
+      let imageUrl = null
+      if (commentImage) {
+        imageUrl = await uploadImageToCloudinary(commentImage)
+      }
+
+      const response = await fetch(`${API_BASE_URL}/comments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          targetId: params.id,
+          targetType: "Menu",
+          content: commentText,
+          rating: commentRating || undefined,
+          userPhoto: imageUrl,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to submit review")
+      }
+
+      toast({
+        title: "Success",
+        description: "Review posted successfully!",
+      })
+
+      setCommentText("")
+      setCommentRating(0)
+      setCommentImage(null)
+      setImagePreview(null)
+      fetchComments()
+      fetchMenu() // Refresh to update stats
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit review",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmittingComment(false)
+    }
+  }
+
+  const handleLikeComment = async (commentId: string) => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      await fetch(`${API_BASE_URL}/comments/${commentId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      fetchComments()
+    } catch (error) {
+      console.error("Error liking comment:", error)
     }
   }
 
@@ -190,6 +327,168 @@ export default function MenuDetailPage() {
               <p className="text-2xl font-bold">{menu.stats.commentsCount}</p>
               <p className="text-sm text-muted-foreground">Comments</p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Reviews Section */}
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Reviews & Comments</CardTitle>
+          <CardDescription>Share your experience with this menu</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Write Review Form */}
+          <div className="mb-8 p-4 border rounded-lg">
+            <h3 className="text-lg font-semibold mb-4">Write a Review</h3>
+            
+            {/* Star Rating */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Rating</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setCommentRating(star)}
+                    className="focus:outline-none transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`h-6 w-6 ${
+                        star <= commentRating
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-gray-300"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Comment Text */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Your Review</label>
+              <Textarea
+                placeholder="Share your thoughts about this menu..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                rows={4}
+              />
+            </div>
+
+            {/* Image Upload */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Add Photo (Optional)</label>
+              <div className="flex gap-4 items-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImageIcon className="h-4 w-4 mr-2" />
+                  Choose Image
+                </Button>
+                {imagePreview && (
+                  <div className="relative">
+                    <img src={imagePreview} alt="Preview" className="h-20 w-20 object-cover rounded" />
+                    <button
+                      onClick={() => {
+                        setCommentImage(null)
+                        setImagePreview(null)
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <Button onClick={handleSubmitComment} disabled={submittingComment}>
+              {submittingComment ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Posting...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Post Review
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Comments List */}
+          <div className="space-y-6">
+            {comments.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                No reviews yet. Be the first to review this menu!
+              </p>
+            ) : (
+              comments.map((comment) => (
+                <div key={comment._id} className="border-b pb-6 last:border-0">
+                  <div className="flex items-start gap-3">
+                    <Avatar>
+                      <AvatarImage src={comment.user?.avatar} />
+                      <AvatarFallback>
+                        {comment.user?.username?.[0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold">
+                            {comment.user?.displayName || comment.user?.username}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        {comment.rating && (
+                          <div className="flex items-center gap-1">
+                            {[...Array(comment.rating)].map((_, i) => (
+                              <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-2 text-sm">{comment.content}</p>
+                      {comment.userPhoto && (
+                        <img
+                          src={comment.userPhoto}
+                          alt="Review photo"
+                          className="mt-3 rounded-lg max-w-xs max-h-64 object-cover"
+                        />
+                      )}
+                      <div className="flex items-center gap-4 mt-3">
+                        <button
+                          onClick={() => handleLikeComment(comment._id)}
+                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                        >
+                          <Heart
+                            className={`h-4 w-4 ${
+                              comment.likedBy?.includes(localStorage.getItem("userId") || "")
+                                ? "fill-red-500 text-red-500"
+                                : ""
+                            }`}
+                          />
+                          {comment.likes || 0}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
