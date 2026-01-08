@@ -32,6 +32,9 @@ export default function Header({ user, onLogout }: HeaderProps) {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex justify-between items-center px-4 md:px-8 py-4">
         <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-[#2e7d32] flex items-center justify-center">
+            <div className="w-3 h-3 rounded-full bg-[#66bb6a]"></div>
+          </div>
           <h1 className="text-2xl font-bold text-[#2e7d32]">Kitchen Guide</h1>
         </Link>
 
