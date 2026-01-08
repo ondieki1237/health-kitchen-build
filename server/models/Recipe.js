@@ -11,6 +11,7 @@ const recipeSchema = new mongoose.Schema(
     isVegan: { type: Boolean, default: false, index: true },
     isVegetarian: { type: Boolean, default: true, index: true },
     thumbnailUrl: String,
+    imageUrl: String,
     videoUrl: String,
     sourceUrl: String,
     description: String,

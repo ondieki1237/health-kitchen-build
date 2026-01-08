@@ -12,6 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { useState } from "react"
+import { AboutDialog } from "./AboutDialog"
 
 interface HeaderProps {
   user?: any
@@ -57,13 +58,15 @@ export default function Header({ user, onLogout }: HeaderProps) {
               </Button>
 
               <Button
-                onClick={() => router.push("/menu/create")}
-                variant="outline"
-                className="flex items-center gap-2"
+                onClick={() => router.push("/recipes/create")}
+                className="flex items-center gap-2 bg-[#2e7d32] hover:bg-[#1b5e20] text-white"
               >
-                <ChefHat className="h-4 w-4" />
-                Create Menu
+                <Plus className="h-4 w-4" />
+                New Recipe
               </Button>
+
+              <AboutDialog />
+
               <span className="text-sm text-gray-700">Welcome, {user.username}</span>
             </>
           )}
@@ -109,12 +112,12 @@ export default function Header({ user, onLogout }: HeaderProps) {
                   </Button>
 
                   <Button
-                    onClick={() => handleNavigation("/menu/create")}
+                    onClick={() => handleNavigation("/recipes/create")}
                     variant="ghost"
-                    className="justify-start gap-3 text-lg"
+                    className="justify-start gap-3 text-lg text-[#2e7d32]"
                   >
-                    <ChefHat className="h-5 w-5" />
-                    Create Menu
+                    <Plus className="h-5 w-5" />
+                    New Recipe
                   </Button>
 
                   <Button
@@ -125,6 +128,10 @@ export default function Header({ user, onLogout }: HeaderProps) {
                     <History className="h-5 w-5" />
                     My Tried Recipes
                   </Button>
+
+                  <div className="flex justify-start">
+                    <AboutDialog />
+                  </div>
 
                   {onLogout && (
                     <Button

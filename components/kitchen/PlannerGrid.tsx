@@ -8,20 +8,25 @@ interface PlannerGridProps {
     planData: Record<string, any[]>
     onSlotClick: (day: string, meal: string) => void
     onRemoveItem: (day: string, meal: string, index: number) => void
+    onDayClick?: (day: string) => void
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const MEALS = ["Breakfast", "Lunch", "Dinner", "Snack"]
 
-export default function PlannerGrid({ planData, onSlotClick, onRemoveItem }: PlannerGridProps) {
+export default function PlannerGrid({ planData, onSlotClick, onRemoveItem, onDayClick }: PlannerGridProps) {
     return (
         <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
             <div className="grid grid-cols-8 divide-x divide-gray-200 border-b border-gray-200 bg-gray-50">
                 <div className="p-4 font-bold text-gray-400">Meal</div>
                 {DAYS.map(day => (
-                    <div key={day} className="p-2 text-center font-bold text-gray-700 text-sm md:text-base">
+                    <button
+                        key={day}
+                        onClick={() => onDayClick && onDayClick(day)}
+                        className="p-2 text-center font-bold text-gray-700 text-sm md:text-base hover:bg-green-50 hover:text-green-700 transition-colors cursor-pointer w-full h-full"
+                    >
                         {day.slice(0, 3)}
-                    </div>
+                    </button>
                 ))}
             </div>
 

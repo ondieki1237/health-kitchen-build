@@ -15,7 +15,7 @@ import syncRoutes from "./routes/sync/index.js";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3900;
+const PORT = process.env.PORT || 3910;
 
 // Middleware
 app.use(cors({

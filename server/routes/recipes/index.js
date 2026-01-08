@@ -13,17 +13,17 @@ router.use("/", favoritesRouter);
 
 // Get all recipes with filters and pagination
 router.get("/", optionalAuth, asyncHandler(async (req, res) => {
-  const { 
-    category, 
-    cuisine, 
-    isVegetarian, 
-    isVegan, 
-    search, 
-    page = 1, 
+  const {
+    category,
+    cuisine,
+    isVegetarian,
+    isVegan,
+    search,
+    page = 1,
     limit = 20,
-    sort = "-createdAt" 
+    sort = "-createdAt"
   } = req.query;
-  
+
   const filter = {};
 
   if (category) filter.category = category;
@@ -32,13 +32,13 @@ router.get("/", optionalAuth, asyncHandler(async (req, res) => {
   if (isVegan === "true") filter.isVegan = true;
   if (search) {
     filter.$or = [
-      { name: { $regex: search, $options: "i" } }, 
+      { name: { $regex: search, $options: "i" } },
       { description: { $regex: search, $options: "i" } }
     ];
   }
 
   const skip = (parseInt(page) - 1) * parseInt(limit);
-  
+
   const [recipes, total] = await Promise.all([
     Recipe.find(filter)
       .sort(sort)
@@ -65,7 +65,7 @@ router.get("/:id", optionalAuth, asyncHandler(async (req, res) => {
   const recipe = await Recipe.findById(req.params.id)
     .populate("createdBy", "displayName avatar username")
     .lean();
-    
+
   if (!recipe) {
     return res.status(404).json({ message: "Recipe not found" });
   }
@@ -80,9 +80,24 @@ router.get("/:id", optionalAuth, asyncHandler(async (req, res) => {
 
 // Create recipe
 router.post("/", verifyToken, asyncHandler(async (req, res) => {
+  // Generate slug if not provided
+  let slug = req.body.slug;
+  if (!slug && req.body.name) {
+    slug = req.body.name
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '') // Remove non-word chars
+      .replace(/[\s_-]+/g, '-') // Replace spaces/underscores with -
+      .replace(/^-+|-+$/g, ''); // Trim -
+
+    // Append random string to ensure uniqueness
+    slug = `${slug}-${Date.now().toString(36)}`;
+  }
+
   const recipeData = {
     ...req.body,
+    slug: slug,
     createdBy: req.userId,
+    dataSource: 'user' // Ensure it's marked as user-generated
   };
 
   const recipe = new Recipe(recipeData);
@@ -102,8 +117,24 @@ router.put("/:id", verifyToken, asyncHandler(async (req, res) => {
     return res.status(404).json({ message: "Recipe not found" });
   }
 
-  // Check ownership
-  if (recipe.createdBy.toString() !== req.userId.toString()) {
+  // Check ownership or allow image update
+  console.log(`[RecipeUpdate] Updating ${req.params.id} by User ${req.userId}`);
+  console.log(`[RecipeUpdate] Recipe CreatedBy: ${recipe.createdBy}, Body Keys: ${Object.keys(req.body)}`);
+
+  if (!req.userId) {
+    console.error("[RecipeUpdate] Missing req.userId!");
+    return res.status(401).json({ message: "User not authenticated" });
+  }
+
+  const recipeCreatorId = recipe.createdBy ? recipe.createdBy.toString() : null;
+  const currentUserId = req.userId.toString();
+
+  const isCreator = recipeCreatorId && recipeCreatorId === currentUserId;
+  // Check if only imageUrl is being updated (ignoring potentially empty fields if any, but strict check is safer)
+  const isImageOnlyUpdate = Object.keys(req.body).length === 1 && req.body.imageUrl;
+
+  if (!isCreator && !isImageOnlyUpdate) {
+    console.log("[RecipeUpdate] Authorization failed");
     return res.status(403).json({ message: "Not authorized to update this recipe" });
   }
 
@@ -156,9 +187,9 @@ router.post("/:id/like", verifyToken, asyncHandler(async (req, res) => {
 
   await recipe.save();
 
-  res.json({ 
-    likes: recipe.likes, 
-    isLiked: likedByIndex === -1 
+  res.json({
+    likes: recipe.likes,
+    isLiked: likedByIndex === -1
   });
 }));
 
@@ -185,9 +216,9 @@ router.post("/:id/save", verifyToken, asyncHandler(async (req, res) => {
 
   await recipe.save();
 
-  res.json({ 
-    saves: recipe.saves, 
-    isSaved: savedByIndex === -1 
+  res.json({
+    saves: recipe.saves,
+    isSaved: savedByIndex === -1
   });
 }));
 

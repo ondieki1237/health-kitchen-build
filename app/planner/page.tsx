@@ -45,6 +45,16 @@ export default function PlannerPage() {
         fat: 0
     })
 
+    // Day Details
+    const [selectedDay, setSelectedDay] = useState<string | null>(null)
+    const [dayDetailsOpen, setDayDetailsOpen] = useState(false)
+    const [dayStats, setDayStats] = useState({
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0
+    })
+
     useEffect(() => {
         const token = localStorage.getItem("token")
         const userData = localStorage.getItem("user")
@@ -141,6 +151,34 @@ export default function PlannerPage() {
         })
     }
 
+    const handleDayClick = (day: string) => {
+        setSelectedDay(day);
+
+        // Calculate Day Stats
+        let cal = 0, pro = 0, carb = 0, fat = 0;
+        const meals = ["Breakfast", "Lunch", "Dinner", "Snack"];
+
+        meals.forEach(meal => {
+            const key = `${day}-${meal}`;
+            const recipes = planData[key] || [];
+            recipes.forEach(r => {
+                cal += r.caloriesPerServing || r.nutrition?.calories || 0;
+                pro += r.nutrition?.protein || 0;
+                carb += r.nutrition?.carbs || 0;
+                fat += r.nutrition?.fat || 0;
+            });
+        });
+
+        setDayStats({
+            calories: Math.round(cal),
+            protein: Math.round(pro),
+            carbs: Math.round(carb),
+            fat: Math.round(fat)
+        });
+
+        setDayDetailsOpen(true);
+    }
+
     const savePlan = async () => {
         setSaving(true)
         try {
@@ -219,6 +257,7 @@ export default function PlannerPage() {
                             planData={planData}
                             onSlotClick={handleSlotClick}
                             onRemoveItem={removeRecipe}
+                            onDayClick={handleDayClick}
                         />
                     </div>
 
@@ -284,6 +323,87 @@ export default function PlannerPage() {
                         <DialogTitle>Select Recipe for {selectedSlot?.day} {selectedSlot?.meal}</DialogTitle>
                     </DialogHeader>
                     <RecipeSelector onSelect={addRecipe} />
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={dayDetailsOpen} onOpenChange={setDayDetailsOpen}>
+                <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-[#2e7d32]">
+                            <CalendarIcon className="h-6 w-6" />
+                            {selectedDay} Details
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="mt-4">
+                        {/* Daily Summary */}
+                        <div className="bg-green-50 p-4 rounded-lg border border-green-100 mb-6 flex flex-wrap gap-4 justify-between items-center">
+                            <div>
+                                <p className="text-sm text-gray-500">Daily Calories</p>
+                                <p className="text-2xl font-bold text-[#2e7d32]">{dayStats.calories} <span className="text-sm font-normal text-gray-600">kcal</span></p>
+                            </div>
+                            <div className="flex gap-4">
+                                <div className="text-center">
+                                    <p className="text-xs text-gray-500">Protein</p>
+                                    <p className="font-semibold text-blue-700">{dayStats.protein}g</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xs text-gray-500">Carbs</p>
+                                    <p className="font-semibold text-orange-700">{dayStats.carbs}g</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xs text-gray-500">Fat</p>
+                                    <p className="font-semibold text-yellow-700">{dayStats.fat}g</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Breakdown by Meal */}
+                        <div className="space-y-6">
+                            {["Breakfast", "Lunch", "Dinner", "Snack"].map(meal => {
+                                const key = `${selectedDay}-${meal}`;
+                                const recipes = planData[key] || [];
+
+                                if (recipes.length === 0) return null;
+
+                                return (
+                                    <div key={meal} className="border-b border-gray-100 pb-4 last:border-0">
+                                        <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                                            <span className="w-1 h-5 rounded-full bg-[#2e7d32]"></span>
+                                            {meal}
+                                        </h3>
+                                        <div className="space-y-3 pl-3">
+                                            {recipes.map((r, idx) => (
+                                                <div key={idx} className="flex justify-between items-start group">
+                                                    <div>
+                                                        <p className="text-gray-900 font-medium">{r.name}</p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {r.caloriesPerServing || r.nutrition?.calories} kcal •
+                                                            P: {r.nutrition?.protein}g • C: {r.nutrition?.carbs}g • F: {r.nutrition?.fat}g
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+
+                            {/* If empty */}
+                            {["Breakfast", "Lunch", "Dinner", "Snack"].every(m => !planData[`${selectedDay}-${m}`] || planData[`${selectedDay}-${m}`].length === 0) && (
+                                <p className="text-center text-gray-500 italic py-8">No meals planned for {selectedDay}.</p>
+                            )}
+                        </div>
+
+                        {/* Educational / Motivational Tip */}
+                        <div className="mt-6 bg-blue-50 p-4 rounded-lg flex gap-3 text-sm text-blue-800">
+                            <Activity className="h-5 w-5 shrink-0" />
+                            <div>
+                                <p className="font-semibold mb-1">Did you know?</p>
+                                <p>Planning your meals ahead can help reduce food waste and save money, while ensuring you meet your nutritional goals!</p>
+                            </div>
+                        </div>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

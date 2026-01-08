@@ -1,4 +1,5 @@
 "use client"
+import RecipeImageFallback from "./RecipeImageFallback"
 import { Badge } from "@/components/ui/badge"
 import { Clock } from "lucide-react"
 
@@ -36,9 +37,7 @@ export default function RecipeCard({ recipe, onClick }: RecipeCardProps) {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-300">
-            <span className="text-gray-500">No image</span>
-          </div>
+          <RecipeImageFallback name={recipe.name} />
         )}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <button className="bg-[#f57c00] text-white px-4 py-2 rounded font-semibold">View Recipe</button>

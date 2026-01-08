@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { API_BASE_URL } from "@/lib/api"
 import CookingAttemptDialog from "@/components/kitchen/CookingAttemptDialog"
-import { Star } from "lucide-react"
+import { Star, Trash2, Edit } from "lucide-react"
 import { format } from "date-fns"
+import ImageUploader from "@/components/ui/ImageUploader"
+import { toast } from "sonner"
 
 interface Recipe {
   _id: string
@@ -26,6 +28,12 @@ interface Recipe {
   ingredients?: Array<{ name: string; quantity: number; measurement: string }>
   instructions?: Array<{ stepNumber: number; instruction: string } | string>
   likes?: number
+  createdBy?: {
+    _id: string
+    displayName: string
+    avatar?: string
+    username?: string
+  }
   stats?: {
     averageRating: number
     totalRatings: number
@@ -81,7 +89,6 @@ export default function RecipeDetailPage() {
 
   const fetchReviews = async () => {
     try {
-      // Assuming public endpoint
       const response = await fetch(`${API_BASE_URL}/cooking-attempts/public?targetId=${id}&targetType=Recipe&limit=10`)
       if (response.ok) {
         const data = await response.json()
@@ -98,7 +105,63 @@ export default function RecipeDetailPage() {
     router.push("/login")
   }
 
+  const handleImageUpdate = async (url: string) => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        toast.error("Please login to upload photos")
+        return
+      }
+
+      const res = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ imageUrl: url })
+      })
+
+      if (!res.ok) throw new Error("Failed to update recipe image")
+
+      setRecipe(prev => prev ? { ...prev, imageUrl: url } : null)
+      toast.success("Recipe image updated!")
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to save image")
+    }
+  }
+
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = async () => {
+    if (typeof window !== 'undefined' && !window.confirm("Are you sure you want to delete this recipe? This action cannot be undone.")) return
+
+    setIsDeleting(true)
+    try {
+      const token = localStorage.getItem("token")
+      const res = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      if (!res.ok) throw new Error("Failed to delete recipe")
+
+      toast.success("Recipe deleted")
+      router.push("/dashboard")
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to delete recipe")
+      setIsDeleting(false)
+    }
+  }
+
+  const isCreator = user && recipe && recipe.createdBy && (user._id === recipe.createdBy._id || user.id === recipe.createdBy._id)
+
   if (loading) {
+    //...
     return (
       <div className="min-h-screen bg-[#f9faf7]">
         <Header user={user} onLogout={handleLogout} />
@@ -127,6 +190,28 @@ export default function RecipeDetailPage() {
           </Button>
 
           <div className="flex gap-2">
+            {isCreator && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push(`/recipes/${id}/edit`)}
+                  className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  <Edit className="w-4 h-4" /> Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </Button>
+              </>
+            )}
             <CookingAttemptDialog
               targetId={recipe._id}
               targetName={recipe.name}
@@ -138,11 +223,26 @@ export default function RecipeDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg overflow-hidden mb-6 shadow-sm">
+        <div className="bg-white rounded-lg overflow-hidden mb-6 shadow-sm relative group">
           {recipe.imageUrl ? (
-            <img src={recipe.imageUrl || "/placeholder.svg"} alt={recipe.name} className="w-full h-96 object-cover" />
+            <>
+              <img src={recipe.imageUrl || "/placeholder.svg"} alt={recipe.name} className="w-full h-96 object-cover" />
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <ImageUploader
+                  onUploadComplete={handleImageUpdate}
+                  buttonLabel="Change Photo"
+                  className="bg-white/90 rounded-md shadow-sm"
+                />
+              </div>
+            </>
           ) : (
-            <div className="w-full h-64 bg-gray-200 flex items-center justify-center text-gray-500">No Image Available</div>
+            <div className="w-full h-96 bg-gray-100 flex flex-col items-center justify-center gap-4 border-2 border-dashed border-gray-200 m-4 rounded-lg">
+              <span className="text-gray-500">No image yet. Add one!</span>
+              <ImageUploader
+                onUploadComplete={handleImageUpdate}
+                buttonLabel="Upload Photo"
+              />
+            </div>
           )}
 
           <div className="p-8">
@@ -211,7 +311,6 @@ export default function RecipeDetailPage() {
             ) : (
               <p className="text-gray-500 italic">No ingredients listed.</p>
             )}
-
           </div>
 
           {/* Instructions */}
@@ -235,7 +334,6 @@ export default function RecipeDetailPage() {
             ) : (
               <p className="text-gray-500 italic">No instructions listed.</p>
             )}
-
           </div>
         </div>
 

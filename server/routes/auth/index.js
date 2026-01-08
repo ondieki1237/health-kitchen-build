@@ -2,6 +2,7 @@ import express from "express";
 import { body, validationResult } from "express-validator";
 import jwt from "jsonwebtoken";
 import User from "../../models/User.js";
+import { sendWelcomeEmail } from "../../utils/email.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
@@ -41,6 +42,9 @@ router.post(
       });
 
       await user.save();
+
+      // Send welcome email (async, don't block response)
+      sendWelcomeEmail(email, username).catch(err => console.error("Email fail:", err));
 
       // Generate JWT
       const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: "7d" });
